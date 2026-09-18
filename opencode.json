@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md"],
+  "skills": {
+    ".opencode/skills": {
+      "enabled": ["genjutsu", "tailwindcss-development"]
+    },
+    ".agents/skills": {
+      "enabled": ["document-project", "frontend-design", "skill-creator"]
+    }
+  }
+}

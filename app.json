@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Digital Ghanti",
+    "slug": "digital-ghanti",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "ghanti",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F59E0B",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aanshtech.digitalghanti",
+      "infoPlist": {
+        "UIBackgroundModes": []
+      }
+    },
+    "android": {
+      "package": "com.aanshtech.digitalghanti",
+      "adaptiveIcon": {
+        "backgroundColor": "#F59E0B"
+      }
+    },
+    "web": {
+      "output": "static",
+      "bundler": "metro",
+      "name": "Digital Ghanti",
+      "shortName": "Ghanti"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-audio"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
