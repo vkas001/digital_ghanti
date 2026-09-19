@@ -44,6 +44,7 @@ const SPRING: WithSpringConfig = {
 export function BellSwitcher({
   toneId,
   ringToken,
+  ringStrength = 1,
   onSwipeNext,
   onSwipePrevious,
   onTap,
@@ -51,6 +52,7 @@ export function BellSwitcher({
 }: {
   toneId: ToneId;
   ringToken: number;
+  ringStrength?: number;
   onSwipeNext: () => void;
   onSwipePrevious: () => void;
   onTap: () => void;
@@ -163,7 +165,11 @@ export function BellSwitcher({
           </Animated.View>
 
           <Animated.View style={slideStyle}>
-            <BellGlyph ringToken={ringToken} size={size} />
+            <BellGlyph
+              ringToken={ringToken}
+              ringStrength={ringStrength}
+              size={size}
+            />
           </Animated.View>
 
           <Animated.View style={chevronRightStyle}>

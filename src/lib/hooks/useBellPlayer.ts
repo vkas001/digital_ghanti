@@ -26,7 +26,12 @@ export function useBellPlayer(toneId: ToneId) {
     }
   }, [player, toneId, tone.source]);
 
-  const ring = useCallback(() => {
+  /**
+   * Rings the bell. `strength` (0..1) sets that strike's volume — the harder
+   * the shake, the louder the bell. Defaults to full volume (tap / button).
+   */
+  const ring = useCallback((strength = 1) => {
+    player.volume = Math.max(0, Math.min(1, strength));
     player.seekTo(0);
     player.play();
   }, [player]);

@@ -2,9 +2,9 @@ import React, { useCallback, useContext, useEffect, useRef, useState } from 'rea
 import { View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Settings } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
+import { AppHeader } from '@/components/ui/AppHeader/AppHeader';
 import { BellSwitcher } from '@/components/ui/BellSwitcher/BellSwitcher';
 import { useBellPlayer } from '@/lib/hooks/useBellPlayer';
 import { useShakeDetect } from '@/lib/hooks/useShakeDetect';
@@ -23,22 +23,28 @@ export default function HomeScreen() {
 
   const [ringCount, setRingCount] = useState(0);
   const [ringToken, setRingToken] = useState(0);
+  const [ringStrength, setRingStrength] = useState(1);
   const [shakeReady, setShakeReady] = useState<boolean | null>(null);
   const ringCountRef = useRef(0);
 
   const { ring } = useBellPlayer(prefs.toneId);
 
-  const doRing = useCallback(() => {
-    ring();
-    ringCountRef.current += 1;
-    setRingCount(ringCountRef.current);
-    setRingToken((t) => t + 1);
-    if (prefs.haptics) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {},
-      );
-    }
-  }, [ring, prefs.haptics]);
+  const doRing = useCallback(
+    (strength?: number) => {
+      const volume = strength ?? 1;
+      ring(volume);
+      setRingStrength(volume);
+      ringCountRef.current += 1;
+      setRingCount(ringCountRef.current);
+      setRingToken((t) => t + 1);
+      if (prefs.haptics) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+          () => {},
+        );
+      }
+    },
+    [ring, prefs.haptics],
+  );
 
   useShakeDetect(doRing, prefs.threshold, shakeReady === true);
 
@@ -59,27 +65,14 @@ export default function HomeScreen() {
       className="flex-1 bg-[var(--background)]"
       edges={['top', 'left', 'right']}
     >
-      <View className="flex-1 px-6 pt-4 pb-10">
-        <View className="flex-row items-center justify-between mb-2">
-          <Text
-            className="text-lg font-bold"
-            style={{ color: theme['text-primary'] }}
-          >
-            Digital Ghanti
-          </Text>
-          <Pressable
-            onPress={() => router.push('/settings')}
-            hitSlop={12}
-            className="p-3 rounded-xl bg-[var(--surface)]"
-          >
-            <Settings size={22} color={theme['text-secondary']} />
-          </Pressable>
-        </View>
+      <AppHeader onSettingsPress={() => router.push('/settings')} />
 
+      <View className="flex-1 px-6 pt-6 pb-10">
         <View className="flex-1 items-center justify-center gap-8">
           <BellSwitcher
             toneId={prefs.toneId}
             ringToken={ringToken}
+            ringStrength={ringStrength}
             onSwipeNext={swipeNext}
             onSwipePrevious={swipePrevious}
             onTap={doRing}
@@ -96,7 +89,7 @@ export default function HomeScreen() {
           )}
 
           <Pressable
-            onPress={doRing}
+            onPress={() => doRing()}
             className="rounded-full bg-[var(--accent)] px-10 py-4 active:bg-[var(--accent-strong)]"
           >
             <Text className="text-[var(--on-accent)] text-base font-bold tracking-wide">

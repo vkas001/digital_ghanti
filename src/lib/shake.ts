@@ -14,9 +14,18 @@ import { AppState, Platform } from 'react-native';
  */
 
 export const SHAKE_UPDATE_INTERVAL_MS = 100;
-export const SHAKE_DEBOUNCE_MS = 700;
+export const SHAKE_DEBOUNCE_MS = 200;
+
+/**
+ * A shake's force is normalized to a volume 0..1. `SHAKE_MIN_VOLUME` is the
+ * softest ring a just-past-threshold shake gets; a magnitude jump of
+ * `SHAKE_VOLUME_RANGE` g above the threshold reaches full volume.
+ */
+export const SHAKE_MIN_VOLUME = 0.25;
+export const SHAKE_VOLUME_RANGE = 3.5;
 
 export type ShakeThreshold = number;
+export type ShakeCallback = (strength: number) => void;
 
 export type ShakeDetector = {
   start: () => void;
@@ -34,7 +43,7 @@ export async function isShakeSupported(): Promise<boolean> {
 }
 
 export function createShakeDetector(
-  onShake: () => void,
+  onShake: ShakeCallback,
   initialThreshold: ShakeThreshold,
 ): ShakeDetector {
   let threshold = initialThreshold;
@@ -52,7 +61,9 @@ export function createShakeDetector(
     if (now - lastShakeAt < SHAKE_DEBOUNCE_MS) return;
 
     lastShakeAt = now;
-    onShake();
+    const strength =
+      SHAKE_MIN_VOLUME + (jump - threshold) / SHAKE_VOLUME_RANGE;
+    onShake(Math.min(1, strength));
   };
 
   return {
