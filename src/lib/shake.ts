@@ -1,5 +1,5 @@
 import { Accelerometer, type AccelerometerMeasurement } from 'expo-sensors';
-import { AppState, Platform } from 'react-native';
+import { Platform } from 'react-native';
 
 /**
  * Accelerometer-based shake detector.
@@ -86,12 +86,4 @@ export function createShakeDetector(
       threshold = next;
     },
   };
-}
-
-export function subscribeToAppState(detector: ShakeDetector): () => void {
-  const sub = AppState.addEventListener('change', (state) => {
-    if (state === 'active') detector.start();
-    else detector.stop();
-  });
-  return () => sub.remove();
 }

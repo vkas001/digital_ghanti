@@ -9,6 +9,7 @@ import Animated, {
   withDelay,
   runOnJS,
   Easing,
+  type SharedValue,
   type WithSpringConfig,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -45,6 +46,7 @@ export function BellSwitcher({
   toneId,
   ringToken,
   ringStrength = 1,
+  sway,
   onSwipeNext,
   onSwipePrevious,
   onTap,
@@ -53,6 +55,7 @@ export function BellSwitcher({
   toneId: ToneId;
   ringToken: number;
   ringStrength?: number;
+  sway?: SharedValue<number>;
   onSwipeNext: () => void;
   onSwipePrevious: () => void;
   onTap: () => void;
@@ -168,6 +171,7 @@ export function BellSwitcher({
             <BellGlyph
               ringToken={ringToken}
               ringStrength={ringStrength}
+              sway={sway}
               size={size}
             />
           </Animated.View>

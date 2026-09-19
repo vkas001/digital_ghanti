@@ -1,10 +1,7 @@
 import { useEffect } from 'react';
 
-import {
-  createShakeDetector,
-  subscribeToAppState,
-  type ShakeCallback,
-} from '@/lib/shake';
+import { subscribeToAppState } from '@/lib/appStateSensor';
+import { createShakeDetector, type ShakeCallback } from '@/lib/shake';
 
 /**
  * Wires the accelerometer shake service to a callback. Owns the full sensor

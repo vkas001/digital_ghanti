@@ -6,6 +6,7 @@ import Animated, {
   withSequence,
   withTiming,
   Easing,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { Bell } from 'lucide-react-native';
 import { useTheme } from '@/styles/useTheme';
@@ -16,16 +17,20 @@ const MAX_SCALE_BOOST = 0.1;
 /**
  * Animated bell glyph — swings when `ringToken` changes (incrementing number)
  * and scale-bounces proportional to `ringStrength` (0..1: how hard the bell
- * was struck). Pass a new number on each ring to trigger the animation.
+ * was struck). Optionally mirrors live device motion: `sway` is a gyroscope-
+ * driven angle (degrees) added to the rotation, so the bell follows the
+ * phone. Pass a new number on each ring to trigger the animation.
  */
 export function BellGlyph({
   ringToken,
   ringStrength = 1,
+  sway,
   size = 120,
   style,
 }: {
   ringToken: number;
   ringStrength?: number;
+  sway?: SharedValue<number>;
   size?: number;
   style?: ViewStyle;
 }) {
@@ -56,7 +61,7 @@ export function BellGlyph({
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { rotate: `${SWING_DEGREES * swing.value}deg` },
+      { rotate: `${(sway?.value ?? 0) + SWING_DEGREES * swing.value}deg` },
       { scale: scale.value },
     ],
   }));

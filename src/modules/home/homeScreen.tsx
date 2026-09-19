@@ -2,17 +2,20 @@ import React, { useCallback, useContext, useEffect, useRef, useState } from 'rea
 import { View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useSharedValue } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
 import { AppHeader } from '@/components/ui/AppHeader/AppHeader';
 import { BellSwitcher } from '@/components/ui/BellSwitcher/BellSwitcher';
 import { useBellPlayer } from '@/lib/hooks/useBellPlayer';
+import { useDeviceTilt } from '@/lib/hooks/useDeviceTilt';
 import { useShakeDetect } from '@/lib/hooks/useShakeDetect';
 import {
   PreferenceContext,
   type PreferenceContextValue,
 } from '@/context/PreferenceContext';
 import { isShakeSupported } from '@/lib/shake';
+import { isTiltSupported } from '@/lib/gyro';
 import { getNextTone, getPreviousTone } from '@/lib/sound/bellPlayer';
 import { useTheme } from '@/styles/useTheme';
 
@@ -25,7 +28,9 @@ export default function HomeScreen() {
   const [ringToken, setRingToken] = useState(0);
   const [ringStrength, setRingStrength] = useState(1);
   const [shakeReady, setShakeReady] = useState<boolean | null>(null);
+  const [tiltReady, setTiltReady] = useState(false);
   const ringCountRef = useRef(0);
+  const sway = useSharedValue(0);
 
   const { ring } = useBellPlayer(prefs.toneId);
 
@@ -47,9 +52,11 @@ export default function HomeScreen() {
   );
 
   useShakeDetect(doRing, prefs.threshold, shakeReady === true);
+  useDeviceTilt(sway, tiltReady);
 
   useEffect(() => {
     isShakeSupported().then(setShakeReady);
+    isTiltSupported().then(setTiltReady);
   }, []);
 
   const swipeNext = useCallback(() => {
@@ -73,6 +80,7 @@ export default function HomeScreen() {
             toneId={prefs.toneId}
             ringToken={ringToken}
             ringStrength={ringStrength}
+            sway={sway}
             onSwipeNext={swipeNext}
             onSwipePrevious={swipePrevious}
             onTap={doRing}
