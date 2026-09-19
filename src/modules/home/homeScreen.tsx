@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Settings } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
-import { BellGlyph } from '@/components/ui/BellGlyph/BellGlyph';
+import { BellSwitcher } from '@/components/ui/BellSwitcher/BellSwitcher';
 import { useBellPlayer } from '@/lib/hooks/useBellPlayer';
 import { useShakeDetect } from '@/lib/hooks/useShakeDetect';
 import {
@@ -13,6 +13,7 @@ import {
   type PreferenceContextValue,
 } from '@/context/PreferenceContext';
 import { isShakeSupported } from '@/lib/shake';
+import { getNextTone, getPreviousTone } from '@/lib/sound/bellPlayer';
 import { useTheme } from '@/styles/useTheme';
 
 export default function HomeScreen() {
@@ -45,13 +46,27 @@ export default function HomeScreen() {
     isShakeSupported().then(setShakeReady);
   }, []);
 
+  const swipeNext = useCallback(() => {
+    prefs.setToneId(getNextTone(prefs.toneId));
+  }, [prefs]);
+
+  const swipePrevious = useCallback(() => {
+    prefs.setToneId(getPreviousTone(prefs.toneId));
+  }, [prefs]);
+
   return (
     <SafeAreaView
       className="flex-1 bg-[var(--background)]"
       edges={['top', 'left', 'right']}
     >
       <View className="flex-1 px-6 pt-4 pb-10">
-        <View className="flex-row justify-end mb-2">
+        <View className="flex-row items-center justify-between mb-2">
+          <Text
+            className="text-lg font-bold"
+            style={{ color: theme['text-primary'] }}
+          >
+            Digital Ghanti
+          </Text>
           <Pressable
             onPress={() => router.push('/settings')}
             hitSlop={12}
@@ -61,15 +76,15 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        <View className="flex-1 items-center justify-center gap-6">
-          <BellGlyph ringToken={ringToken} size={140} />
-
-          <Text
-            className="text-xl font-semibold"
-            style={{ color: theme['text-primary'] }}
-          >
-            Digital Ghanti
-          </Text>
+        <View className="flex-1 items-center justify-center gap-8">
+          <BellSwitcher
+            toneId={prefs.toneId}
+            ringToken={ringToken}
+            onSwipeNext={swipeNext}
+            onSwipePrevious={swipePrevious}
+            onTap={doRing}
+            size={140}
+          />
 
           {ringCount > 0 && (
             <Text
@@ -82,7 +97,7 @@ export default function HomeScreen() {
 
           <Pressable
             onPress={doRing}
-            className="mt-4 rounded-full bg-[var(--accent)] px-10 py-4 active:bg-[var(--accent-strong)]"
+            className="rounded-full bg-[var(--accent)] px-10 py-4 active:bg-[var(--accent-strong)]"
           >
             <Text className="text-[var(--on-accent)] text-base font-bold tracking-wide">
               Ring
@@ -90,7 +105,7 @@ export default function HomeScreen() {
           </Pressable>
 
           <Text
-            className="text-sm mt-2"
+            className="text-sm"
             style={{ color: theme['text-secondary'] }}
           >
             {shakeReady === null

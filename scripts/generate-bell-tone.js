@@ -78,7 +78,7 @@ function synthesizeBell(spec) {
     }
   }
 
-  const attack = Math.floor(SAMPLE_RATE * 0.004);
+  const attack = Math.floor(SAMPLE_RATE * (spec.attack ?? 0.004));
   for (let i = 0; i < n; i++) {
     if (i < attack) samples[i] *= i / attack;
     const tail = n - 1 - i;
@@ -136,6 +136,20 @@ const TONES = {
       [5.4, 0.18, 0.17],
     ],
   },
+  'puja.wav': {
+    baseHz: 1046,
+    duration: 1.8,
+    detune: 0.004,
+    strikes: [0, 0.14, 0.28],
+    clapper: 0.35,
+    partials: [
+      [1.0, 1.0, 0.75],
+      [2.0, 0.55, 0.55],
+      [2.71, 0.55, 0.42],
+      [4.09, 0.42, 0.24],
+      [5.4, 0.28, 0.15],
+    ],
+  },
   'ghanta.wav': {
     baseHz: 98,
     duration: 4.0,
@@ -168,6 +182,49 @@ const TONES = {
       [3.4, 0.3, 0.6],
       [4.09, 0.35, 0.4],
       [5.4, 0.2, 0.23],
+    ],
+  },
+  'dinner.wav': {
+    baseHz: 330,
+    duration: 2.0,
+    detune: 0.003,
+    strikes: [0, 0.7],
+    clapper: 0.4,
+    partials: [
+      [1.0, 1.0, 1.15],
+      [2.0, 0.55, 0.7],
+      [2.71, 0.5, 0.5],
+      [4.09, 0.35, 0.28],
+      [5.4, 0.18, 0.15],
+    ],
+  },
+  'cowbell.wav': {
+    baseHz: 392,
+    duration: 1.6,
+    detune: 0.004,
+    strikes: [0],
+    clapper: 0.9,
+    partials: [
+      [1.0, 1.0, 0.7],
+      [2.71, 0.6, 0.45],
+      [4.09, 0.5, 0.3],
+      [5.4, 0.4, 0.18],
+      [6.71, 0.3, 0.12],
+    ],
+  },
+  'tibetan.wav': {
+    baseHz: 264,
+    duration: 4.0,
+    detune: 0.001,
+    strikes: [0],
+    clapper: 0,
+    attack: 0.05,
+    partials: [
+      [0.5, 0.6, 3.4],
+      [1.0, 1.0, 3.2],
+      [1.5, 0.4, 2.6],
+      [2.0, 0.3, 2.0],
+      [2.71, 0.12, 1.4],
     ],
   },
   'dingdong.wav': {

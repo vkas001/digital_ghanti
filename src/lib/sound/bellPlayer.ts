@@ -4,11 +4,15 @@ export type ToneId =
   | 'temple'
   | 'ghanta'
   | 'church'
+  | 'puja'
   | 'school'
   | 'dingdong'
   | 'handbell'
+  | 'dinner'
+  | 'cowbell'
   | 'alarm'
-  | 'ding';
+  | 'ding'
+  | 'tibetan';
 
 export type BellTone = {
   id: ToneId;
@@ -37,6 +41,12 @@ export const BELL_TONES: BellTone[] = [
     source: require('../../../assets/sounds/church.wav'),
   },
   {
+    id: 'puja',
+    label: 'Puja Bell',
+    description: 'Bright · rapid',
+    source: require('../../../assets/sounds/puja.wav'),
+  },
+  {
     id: 'school',
     label: 'School Bell',
     description: 'Bright · sharp',
@@ -55,6 +65,18 @@ export const BELL_TONES: BellTone[] = [
     source: require('../../../assets/sounds/handbell.wav'),
   },
   {
+    id: 'dinner',
+    label: 'Dinner Bell',
+    description: 'Classic · double-strike',
+    source: require('../../../assets/sounds/dinner.wav'),
+  },
+  {
+    id: 'cowbell',
+    label: 'Cow Bell',
+    description: 'Rustic · clang',
+    source: require('../../../assets/sounds/cowbell.wav'),
+  },
+  {
     id: 'alarm',
     label: 'Alarm Bell',
     description: 'Fast · rattling',
@@ -66,6 +88,12 @@ export const BELL_TONES: BellTone[] = [
     description: 'Quick · crisp',
     source: require('../../../assets/sounds/ding.wav'),
   },
+  {
+    id: 'tibetan',
+    label: 'Tibetan Bowl',
+    description: 'Resonant · sustained',
+    source: require('../../../assets/sounds/tibetan.wav'),
+  },
 ];
 
 export function getTone(id: ToneId): BellTone {
@@ -74,4 +102,21 @@ export function getTone(id: ToneId): BellTone {
     throw new Error(`Unknown bell tone: ${id}`);
   }
   return tone;
+}
+
+export function getToneIndex(id: ToneId): number {
+  return BELL_TONES.findIndex((t) => t.id === id);
+}
+
+export function getToneByIdx(index: number): BellTone {
+  const wrapped = ((index % BELL_TONES.length) + BELL_TONES.length) % BELL_TONES.length;
+  return BELL_TONES[wrapped];
+}
+
+export function getNextTone(id: ToneId): ToneId {
+  return getToneByIdx(getToneIndex(id) + 1).id;
+}
+
+export function getPreviousTone(id: ToneId): ToneId {
+  return getToneByIdx(getToneIndex(id) - 1).id;
 }

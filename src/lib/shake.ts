@@ -1,5 +1,5 @@
 import { Accelerometer, type AccelerometerMeasurement } from 'expo-sensors';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 /**
  * Accelerometer-based shake detector.
@@ -25,6 +25,7 @@ export type ShakeDetector = {
 };
 
 export async function isShakeSupported(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
   try {
     return await Accelerometer.isAvailableAsync();
   } catch {
@@ -58,8 +59,12 @@ export function createShakeDetector(
     start() {
       if (active) return;
       active = true;
-      Accelerometer.setUpdateInterval(SHAKE_UPDATE_INTERVAL_MS);
-      Accelerometer.addListener(handleSample);
+      try {
+        Accelerometer.setUpdateInterval(SHAKE_UPDATE_INTERVAL_MS);
+        Accelerometer.addListener(handleSample);
+      } catch {
+        active = false;
+      }
     },
     stop() {
       if (!active) return;
