@@ -15,6 +15,12 @@
  *   - `clapper`: 0..1 percussive strike — a short low-passed noise burst
  *     (the mechanical "clack" of the struck bell, heavier on big bells).
  *
+ * Every tone ALSO emits `<id>.ring.wav`: a seamless, sustained "ring body"
+ * for continuous shaking. Same inharmonic partials but with a steady envelope
+ * (no strike, no decay), each partial doubled with a slow beating partner and
+ * a shallow tremolo. Frequencies are rounded to integer cycles over the loop
+ * length so the WAV loops with zero seam artifact.
+ *
  * Pure Node (no external audio): writes 16-bit PCM mono WAVs.
  * Deterministic: a seeded PRNG adds a whisper of detune for shimmer.
  */
@@ -88,6 +94,56 @@ function synthesizeBell(spec) {
   let peak = 0;
   for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(samples[i]));
   const gain = peak > 0 ? 0.9 / peak : 0;
+
+  const pcm = Buffer.alloc(n * 2);
+  for (let i = 0; i < n; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i] * gain));
+    pcm.writeInt16LE(Math.round(s * 32767), i * 2);
+  }
+  return pcm;
+}
+
+/**
+ * Synthesizes the sustained ring loop for a tone: steady amplitude, each
+ * partial doubled by a beating partner (±1..3 cycles over the loop), shallow
+ * tremolo. All oscillators + tremolo complete an integer number of cycles over
+ * `duration`, so looping back to the head is seamless.
+ *
+ * @param {{ baseHz: number, ringDuration?: number, partials: [number, number, number][], detune?: number }} spec
+ */
+function synthesizeRing(spec) {
+  const rand = mulberry32(Math.round(spec.baseHz * 1000) + 719);
+  const duration = spec.ringDuration ?? 2.0;
+  const n = Math.floor(SAMPLE_RATE * duration);
+  const samples = new Float64Array(n);
+  const tremoloCycles = 2;
+  const tremoloPhase = rand() * Math.PI * 2;
+  const detune = spec.detune ?? 0.002;
+
+  for (const [ratio, amp] of spec.partials) {
+    const base = spec.baseHz * ratio;
+    const f1 =
+      Math.round(base * (1 + (rand() - 0.5) * detune) * duration) / duration;
+    const beats = 1 + Math.floor(rand() * 3);
+    const f2 = Math.abs(f1 + ((rand() < 0.5 ? -1 : 1) * beats) / duration);
+    const ph1 = rand() * Math.PI * 2;
+    const ph2 = rand() * Math.PI * 2;
+    const w1 = (2 * Math.PI * f1) / SAMPLE_RATE;
+    const w2 = (2 * Math.PI * f2) / SAMPLE_RATE;
+    for (let i = 0; i < n; i++) {
+      samples[i] +=
+        amp * (0.5 * Math.sin(w1 * i + ph1) + 0.5 * Math.sin(w2 * i + ph2));
+    }
+  }
+
+  for (let i = 0; i < n; i++) {
+    const trem = 1 + 0.06 * Math.sin((Math.PI * 2 * tremoloCycles * i) / n + tremoloPhase);
+    samples[i] *= trem;
+  }
+
+  let peak = 0;
+  for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(samples[i]));
+  const gain = peak > 0 ? 0.85 / peak : 0;
 
   const pcm = Buffer.alloc(n * 2);
   for (let i = 0; i < n; i++) {
@@ -302,6 +358,9 @@ const TONES = {
 for (const [file, spec] of Object.entries(TONES)) {
   const pcm = synthesizeBell(spec);
   writeWav(path.join(outDir, file), pcm);
+
+  const ringPcm = synthesizeRing(spec);
+  writeWav(path.join(outDir, file.replace(/\.wav$/, '.ring.wav')), ringPcm);
 }
 
 console.log('done.');

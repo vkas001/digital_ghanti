@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -32,12 +32,17 @@ export default function HomeScreen() {
   const ringCountRef = useRef(0);
   const sway = useSharedValue(0);
 
-  const { ring } = useBellPlayer(prefs.toneId);
+  const {
+    ringOnce,
+    startRing,
+    updateRingVolume,
+    stopRing,
+  } = useBellPlayer(prefs.toneId);
 
   const doRing = useCallback(
     (strength?: number) => {
       const volume = strength ?? 1;
-      ring(volume);
+      ringOnce(volume);
       setRingStrength(volume);
       ringCountRef.current += 1;
       setRingCount(ringCountRef.current);
@@ -48,10 +53,42 @@ export default function HomeScreen() {
         );
       }
     },
-    [ring, prefs.haptics],
+    [ringOnce, prefs.haptics],
   );
 
-  useShakeDetect(doRing, prefs.threshold, shakeReady === true);
+  const onShakeStart = useCallback(
+    (strength: number) => {
+      startRing(strength);
+      setRingStrength(strength);
+      ringCountRef.current += 1;
+      setRingCount(ringCountRef.current);
+      setRingToken((t) => t + 1);
+      if (prefs.haptics) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+          () => {},
+        );
+      }
+    },
+    [startRing, prefs.haptics],
+  );
+
+  const onShakeIntensity = useCallback(
+    (strength: number) => {
+      updateRingVolume(strength);
+    },
+    [updateRingVolume],
+  );
+
+  const onShakeStop = useCallback(() => {
+    stopRing();
+  }, [stopRing]);
+
+  const shakeCallbacks = useMemo(
+    () => ({ onStart: onShakeStart, onIntensity: onShakeIntensity, onStop: onShakeStop }),
+    [onShakeStart, onShakeIntensity, onShakeStop],
+  );
+
+  useShakeDetect(shakeCallbacks, prefs.threshold, shakeReady === true);
   useDeviceTilt(sway, tiltReady);
 
   useEffect(() => {

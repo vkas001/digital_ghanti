@@ -1,24 +1,29 @@
 import { useEffect } from 'react';
 
 import { subscribeToAppState } from '@/lib/appStateSensor';
-import { createShakeDetector, type ShakeCallback } from '@/lib/shake';
+import { createShakeDetector, type ShakeStateCallbacks } from '@/lib/shake';
 
 /**
  * Wires the accelerometer shake service to a callback. Owns the full sensor
  * lifecycle: subscribes on mount, unsubscribes on unmount, and pauses the
  * sensor whenever the app leaves `active` state via AppState — so a shake is
  * never detected while backgrounded and no listener is ever leaked. The
- * callback receives a `strength` (0..1) proportional to the shake's force.
+ * callbacks model shaking as a motion state (start / live intensity / stop).
  */
 export function useShakeDetect(
-  onShake: ShakeCallback,
+  callbacks: ShakeStateCallbacks,
   threshold: number,
   enabled: boolean,
 ) {
+  const { onStart, onIntensity, onStop } = callbacks;
+
   useEffect(() => {
     if (!enabled) return;
 
-    const detector = createShakeDetector(onShake, threshold);
+    const detector = createShakeDetector(
+      { onStart, onIntensity, onStop },
+      threshold,
+    );
     detector.start();
     const unsubscribeAppState = subscribeToAppState(detector);
 
@@ -26,5 +31,5 @@ export function useShakeDetect(
       unsubscribeAppState();
       detector.stop();
     };
-  }, [onShake, threshold, enabled]);
+  }, [onStart, onIntensity, onStop, threshold, enabled]);
 }

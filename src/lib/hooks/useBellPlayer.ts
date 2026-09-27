@@ -1,19 +1,32 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
 
 import { ringInSilentMode } from '@/lib/audio';
 import { getTone, type ToneId } from '@/lib/sound/bellPlayer';
 import { useAudioPlayer } from 'expo-audio';
 
 /**
- * Bell playback hook wrapping expo-audio. The player is created with the
- * selected tone's bundled WAV, swapped via `replace()` when the tone changes,
- * and rings by seeking back to 0 and playing — so a shake while a bell is
- * still fading re-strikes it instead of stacking overlapping players.
+ * Bell playback hook wrapping expo-audio. Two players:
+ *
+ *  - `strikePlayer` — the single-strike tone. Used by taps/buttons, rings by
+ *    seeking to 0 and playing so a re-hit truncates cleanly.
+ *  - `sustainPlayer` — the seamless ring-body loop, used while the phone is
+ *    being shaken. It loops continuously with `player.loop`, and its volume
+ *    is updated live from shake intensity (harder shake = louder), so a
+ *    sustained shake is one continuous ringing bell. Stopping plays a final
+ *    single strike so the bell rings out naturally.
+ *
+ * Both players swap source via `replace()` when the tone changes.
  */
 export function useBellPlayer(toneId: ToneId) {
   const tone = getTone(toneId);
-  const player = useAudioPlayer(tone.source, { updateInterval: 250 });
+  const strikePlayer = useAudioPlayer(tone.source, { updateInterval: 1000 });
+  const sustainPlayer = useAudioPlayer(tone.ringSource, {
+    updateInterval: 1000,
+  });
   const lastToneRef = useRef(toneId);
+  const sustainActiveRef = useRef(false);
+  const lastStrengthRef = useRef(1);
 
   useEffect(() => {
     void ringInSilentMode();
@@ -22,19 +35,59 @@ export function useBellPlayer(toneId: ToneId) {
   useEffect(() => {
     if (lastToneRef.current !== toneId) {
       lastToneRef.current = toneId;
-      player.replace(tone.source);
+      strikePlayer.replace(tone.source);
+      sustainPlayer.replace(tone.ringSource);
     }
-  }, [player, toneId, tone.source]);
+  }, [strikePlayer, sustainPlayer, toneId, tone.source, tone.ringSource]);
 
-  /**
-   * Rings the bell. `strength` (0..1) sets that strike's volume — the harder
-   * the shake, the louder the bell. Defaults to full volume (tap / button).
-   */
-  const ring = useCallback((strength = 1) => {
-    player.volume = Math.max(0, Math.min(1, strength));
-    player.seekTo(0);
-    player.play();
-  }, [player]);
+  /** One strike of the current bell. Defaults to full volume (tap / button). */
+  const ringOnce = useCallback(
+    (strength = 1) => {
+      strikePlayer.volume = Math.max(0, Math.min(1, strength));
+      strikePlayer.seekTo(0);
+      strikePlayer.play();
+    },
+    [strikePlayer],
+  );
 
-  return { ring, player };
+  /** Begin the continuous ring loop while shaking. */
+  const startRing = useCallback(
+    (strength: number) => {
+      lastStrengthRef.current = strength;
+      sustainPlayer.loop = true;
+      sustainPlayer.volume = Math.max(0, Math.min(1, strength));
+      sustainPlayer.play();
+      sustainActiveRef.current = true;
+    },
+    [sustainPlayer],
+  );
+
+  /** Track shake force into the loop's volume while ringing. */
+  const updateRingVolume = useCallback(
+    (strength: number) => {
+      lastStrengthRef.current = strength;
+      sustainPlayer.volume = Math.max(0, Math.min(1, strength));
+    },
+    [sustainPlayer],
+  );
+
+  /** End the continuous ring and let the bell ring out with one last strike. */
+  const stopRing = useCallback(() => {
+    if (!sustainActiveRef.current) return;
+    sustainActiveRef.current = false;
+    sustainPlayer.pause();
+    ringOnce(lastStrengthRef.current);
+  }, [sustainPlayer, ringOnce]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active' && sustainActiveRef.current) {
+        sustainActiveRef.current = false;
+        sustainPlayer.pause();
+      }
+    });
+    return () => sub.remove();
+  }, [sustainPlayer]);
+
+  return { ringOnce, startRing, updateRingVolume, stopRing, strikePlayer };
 }
